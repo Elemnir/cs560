@@ -30,7 +30,7 @@ void parse(const string &str) {
         return;
 
     if (cmd == "mkfs") {
-        fs.make_filesystem();
+        fs.format();
     } else if (cmd == "open") {
         if (ss >> sarg1 >> sarg2) {
             fs.open(sarg1, sarg2);
@@ -45,7 +45,7 @@ void parse(const string &str) {
         }
     } else if (cmd == "write") {
         if (ss >> fd >> sarg1) {
-            
+            fs.write(fd, sarg1);
         } else {
             //error
         }
