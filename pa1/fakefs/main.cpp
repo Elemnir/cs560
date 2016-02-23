@@ -91,13 +91,13 @@ void parse(const string &str) {
         fs.dir_tree();
     } else if (cmd == "import") {
         if (ss >> sarg1 >> sarg2) {
-            fs.import(sarg1, sarg2);
+            fs.import_file(sarg1, sarg2);
         } else {
             //error
         }
     } else if (cmd == "export") {
         if (ss >> sarg1 >> sarg2) {
-            fs.export(sarg1, sarg2);
+            fs.export_file(sarg1, sarg2);
         } else {
             //error
         }

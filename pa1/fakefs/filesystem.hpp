@@ -1,8 +1,9 @@
 #ifndef FILESYSTEM_HPP
 #define FILESYSTEM_HPP
 
-#include <fstream>
+#include <cstdio>
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -13,7 +14,7 @@ class FileSystem {
 
     void load(const string &fname);
     void format();
-    void open(const string &fname);
+    void open(const string &fname, const string& mode);
     void read(int fd, int size);
     void write(int fd, const string &str);
     void seek(int fd, int offset);
@@ -24,11 +25,18 @@ class FileSystem {
     void dir_list();
     void dump(const string &fname);
     void dir_tree();
-    void import(const string &src, const string &dest);
-    void export(const string &dest, const string &src);
+    void import_file(const string &src, const string &dest);
+    void export_file(const string &dest, const string &src);
+  
+  protected:
+    struct FileHandle {
+        FileHandle() : seek(0) {};
+        size_t seek;
+    };
 
   private:
-    fstream _fsfile;
+    FILE *_fsfile;
+    vector<FileHandle> _active;
 };
 
 #endif // FILESYSTEM_HPP
