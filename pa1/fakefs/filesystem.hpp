@@ -39,31 +39,34 @@ class FileSystem {
   protected:
     
     struct Header {
+        Header() : root(0), flh(0), avail(0) {};
         BLK_NO root;
         BLK_NO flh;
         BLK_CT avail;
     };
 
     struct FreeListNode {
+        FreeListNode() : next(0), size(0) {};
         BLK_NO next;
         BLK_CT size;
     };
 
     struct Inode {
+        Inode() : blkCount(0), len(0), isDir(false), isBig(false) {};
         BLK_CT blkCount;
         size_t len;
         bool isDir, isBig;
-        BLK_NO block[512];
+        BLK_NO block[512] = {0};
     };
 
     struct Block {
         char* operator&() { return text; }
         char& operator[](int i) { return text[i]; }
-        char text[BLK_SIZE];
+        char text[BLK_SIZE] = {0};
     };
     
     struct FileHandle {
-        FileHandle() : seek(0) {};
+        FileHandle() : seek(0), inode(0), read(false), write(false) {};
         OFFSET seek;
         BLK_NO inode;
         Block curr;
@@ -75,18 +78,26 @@ class FileSystem {
     // Setters and Getters for the Header, Inodes, Blocks, and FreeListNodes
     void    get_header();
     void    set_header();
-    Inode   get_inode(const BLK_NO blk);
-    void    set_inode(const BLK_NO blk, const Inode& buf);    
-    Block   get_block(const BLK_NO blk);
-    void    set_block(const BLK_NO blk, const Block& buf);
-    FreeListNode get_freelistnode(const BLK_NO blk);
-    void  set_freelistnode(const BLK_NO blk, const FreeListNode& buf);
+    
+    template<class T>
+    T get(const BLK_NO blk) {
+        T rval;
+        fsfile.seekg(BLK_SIZE * blk);
+        fsfile.read((char*) &rval, sizeof(T));
+        return rval;
+    }
+
+    template<class T>
+    void set(const BLK_NO blk, const T& buf) {
+        fsfile.seekp(BLK_SIZE * blk);
+        fsfile.write((char*) &buf, sizeof(T));
+    }
     
     // Use for selecting and returning blocks from the free set
     BLK_NO allocate_block();
     void   free_block(BLK_NO blk);
 
-    // Call whenever modifying the current directory
+    // Directory tools
     void init_dir(BLK_NO self, BLK_NO parent);
     void map_current_dir();
 
