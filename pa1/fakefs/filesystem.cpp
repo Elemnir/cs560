@@ -3,7 +3,8 @@
 using namespace std;
 
 FileSystem::FileSystem(const string &fsname) {
-    if (load(fsname)) {
+    if (load(fsname)) { 
+        // If we had to create the file, all of this is undefined
         get_header();
         cdi = get_inode(header.root);
         map_current_dir();
@@ -134,7 +135,6 @@ void FileSystem::set_freelistnode(const BLK_NO blk,
         const FileSystem::FreeListNode &buf) {
     fsfile.seekp(BLK_SIZE * blk);
     fsfile.write((char*) &buf, sizeof(FreeListNode));
-
 }
 
 BLK_NO FileSystem::allocate_block() {
@@ -145,12 +145,14 @@ BLK_NO FileSystem::allocate_block() {
     if (node.size == 1) {
         rval = header.flh;
         header.flh = node.next;
-        set_header();
     } else { 
         node.size--;
         rval = header.flh + node.size;
         set_freelistnode(header.flh, node);
     }
+    header.avail--;
+    set_header();
+
     return rval;
 }
 
@@ -160,6 +162,7 @@ void FileSystem::free_block(BLK_NO blk) {
     node.next = header.flh;
     node.size = 1;
     header.flh = blk;
+    header.avail++;
     
     set_header();
     set_freelistnode(blk, node);
