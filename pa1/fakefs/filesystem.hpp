@@ -57,6 +57,7 @@ class FileSystem {
         size_t len;
         bool isDir, isBig;
         BLK_NO block[512] = {0};
+        BLK_NO blkno;
     };
 
     struct Block {
