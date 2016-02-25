@@ -69,11 +69,11 @@ class FileSystem {
     };
     
     struct FileHandle {
-        FileHandle() : seek(0), inode(0), read(false), write(false) {};
+        FileHandle() : seek(0), read(false), write(false), valid(true) {};
         OFFSET seek;
-        BLK_NO inode;
+        Inode inode;
         Block curr;
-        bool read, write;
+        bool read, write, valid;
     };
 
   private:
@@ -100,8 +100,8 @@ class FileSystem {
     BLK_NO allocate_block();
     void   free_block(BLK_NO blk);
 
-    // Directory tools
-    void init_dir(BLK_NO self, BLK_NO parent);
+    // Directory and File tools
+    void init_file(BLK_NO self, BLK_NO parent, bool isDir);
     void map_current_dir();
 
     // Handle to storage, the FS Header, and the Current Directory
