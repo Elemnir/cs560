@@ -94,7 +94,7 @@ void FileSystem::open(const string &fname, const string& mode) {
         opened.push_back(fh);
     }
 
-    cout << "SUCCESS, fd=" << i << endl;
+    cout << "SUCCESS, fd=" << i << "\n";
 }
 
 void FileSystem::read(int fd, int size) {
@@ -107,6 +107,11 @@ void FileSystem::seek(int fd, int offset) {
 }
 
 void FileSystem::close(int fd) {
+    if (opened.size() > fd && opened[fd].valid) {
+        opened[fd].valid = false;
+    } else {
+        cout << "Bad file descriptor " << fd << "\n";
+    }
 }
 
 void FileSystem::mkdir(const string &dir) {
@@ -133,6 +138,9 @@ void FileSystem::chdir(const string &dir) {
 }
 
 void FileSystem::dir_list() {
+    for (const auto& i : cdd) {
+        cout << i.first << "\n";
+    }
 }
 
 void FileSystem::dump(const string &fname) {
