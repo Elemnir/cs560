@@ -52,10 +52,12 @@ class FileSystem {
     };
 
     struct Inode {
-        Inode() : blkCount(0), len(0), isDir(false), isBig(false) {};
-        BLK_CT blkCount;
+        Inode() : blkCount(0), inodeCount(0), len(0), 
+            isDir(false), prev(0), next(0) {};
+        BLK_NO prev, next;
+        BLK_CT blkCount, inodeCount;
         size_t len;
-        bool isDir, isBig;
+        bool isDir;
         BLK_NO block[512] = {0};
         BLK_NO blkno;
     };

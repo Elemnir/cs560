@@ -56,7 +56,11 @@ void FileSystem::format() {
 }
 
 void FileSystem::open(const string &fname, const string& mode) {
-    
+    if (cdd.find(fname) != cdd.end()) {
+        // The file exists
+    } else {
+        // Gotta make it
+    }
 }
 
 void FileSystem::read(int fd, int size) {
@@ -79,6 +83,18 @@ void FileSystem::rmdir(const string &dir) {
 }
 
 void FileSystem::chdir(const string &dir) {
+    Inode node;
+    if (cdd.find(dir) != cdd.end()) {
+        node = get<Inode>(cdd[dir]);
+        if (node.isDir) {
+            cdi = node;
+            map_current_dir();
+        } else {
+            // Not a dir error
+        }
+    } else {
+        // Directory doesn't exist
+    }
 }
 
 void FileSystem::dir_list() {
