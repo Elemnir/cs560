@@ -229,6 +229,7 @@ void FileSystem::init_file(BLK_NO self, BLK_NO parent, bool isDir) {
 
     // Add the file to the current directory
     if (self != parent) {
+
     }
 
     set<Inode>(self, node);

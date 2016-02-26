@@ -17,6 +17,7 @@ all: $(CXXSOURCES) $(CXXEXECUTABLE) $(CEXECUTABLES)
 # Compile fakefs
 $(CXXEXECUTABLE): $(CXXOBJECTS)
 	$(CC) $(LDFLAGS) $(CXXOBJECTS) -o $@
+	rm -rf $(CXXOBJECTS)
 .cpp.o:
 	$(CC) $(CXXFLAGS) $< -o $@
 
