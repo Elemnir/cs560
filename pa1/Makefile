@@ -1,6 +1,5 @@
 # Compiler options
-CXX=g++
-CC=gcc
+CC=g++
 CFLAGS=-Wall
 CXXFLAGS=-c -Wall -std=c++11
 LDFLAGS=
@@ -17,9 +16,9 @@ all: $(CXXSOURCES) $(CXXEXECUTABLE) $(CEXECUTABLES)
 	
 # Compile fakefs
 $(CXXEXECUTABLE): $(CXXOBJECTS)
-	$(CXX) $(LDFLAGS) $(CXXOBJECTS) -o $@
+	$(CC) $(LDFLAGS) $(CXXOBJECTS) -o $@
 .cpp.o:
-	$(CXX) $(CXXFLAGS) $< -o $@
+	$(CC) $(CXXFLAGS) $< -o $@
 
 # Compile server and client
 client/client: client/client.c

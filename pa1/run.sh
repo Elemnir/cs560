@@ -10,3 +10,5 @@ echo "Running server."
 
 echo "Starting client."
 ./client/client 30000
+
+kill $!

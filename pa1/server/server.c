@@ -11,17 +11,20 @@
 /* Execute the shell and dup its stdout */
 void exec_shell(int client_fd)
 {
+  char cmd[] = "fakefs";
+  size_t size = 7;
   char *argv[2];
 
-  argv[0] = "fakefs";
+  argv[0] = (char *) malloc(size);
+  strncpy(argv[0], cmd, size);
   argv[1] = NULL;
   
   dup2(client_fd, 0);
   dup2(client_fd, 1);
   dup2(client_fd, 2);
   
-  printf("Running filesystem shell...\n");
-  execvp("fakefs", argv);
+  execvp(cmd, argv);
+
   perror("Exec failed.\n");
   exit(1);
 }
@@ -87,14 +90,14 @@ int main(int argc, char **argv)
     /* Get a socket */
     sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
     if(sock == -1) {
-      perror("");
+      /*perror("");*/
       continue;
     }
 
     /* Connect to the port */
     if(bind(sock, p->ai_addr, p->ai_addrlen) == -1) {
       close(sock);
-      perror("");
+      /*perror("");*/
       continue;
     }
 
@@ -109,7 +112,7 @@ int main(int argc, char **argv)
   
   /* Start listening for clients */
   if(listen(sock, backlog) == -1) {
-    perror("");
+    /*perror("");*/
     exit(1);
   }
 

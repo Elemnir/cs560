@@ -15,7 +15,7 @@ int main(int argc, char **argv)
   struct addrinfo hints, *info, *p;
   int retval, portnum, sock, received;
   char ip4[INET_ADDRSTRLEN];
-  char *msg = malloc(sizeof(char) * 1000);
+  char *msg = (char *) malloc(sizeof(char) * 1000);
   fd_set readfds, masterfds;
 
   /* Handle arguments */
@@ -75,9 +75,7 @@ int main(int argc, char **argv)
   if(p == NULL) {
     fprintf(stderr, "ERROR: Failed to connect.\n");
     exit(1);
-  } /* else {
-    printf("Successfully connected.\n");
-  } */
+  }
 
   /* Set the file descriptors */
   FD_ZERO(&masterfds);
