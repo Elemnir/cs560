@@ -74,7 +74,7 @@ void FileSystem::open(const string &fname, const string& mode) {
     } else if (mode == "w") {
         // Make the file if it doesn't exist
         BLK_NO blk = allocate_block();
-        init_file(blk, cdi.blkno, false);
+        init_file(blk, cdi.blkNo, false);
         map_current_dir();
         fh.inode = get<Inode>(blk);
         fh.curr = get<Block>(fh.inode.block[0]);
@@ -98,12 +98,15 @@ void FileSystem::open(const string &fname, const string& mode) {
 }
 
 void FileSystem::read(int fd, int size) {
+  
 }
 
 void FileSystem::write(int fd, const string &str) {
 }
 
 void FileSystem::seek(int fd, int offset) {
+    //make sure fd is correct
+
 }
 
 void FileSystem::close(int fd) {
@@ -115,7 +118,7 @@ void FileSystem::close(int fd) {
 }
 
 void FileSystem::mkdir(const string &dir) {
-    init_file(allocate_block(), cdi.blkno, true);
+    init_file(allocate_block(), cdi.blkNo, true);
     map_current_dir();
 }
 
@@ -150,6 +153,7 @@ void FileSystem::dir_tree() {
 }
 
 void FileSystem::import_file(const string &src, const string &dest) {
+
 }
 
 void FileSystem::export_file(const string &dest, const string &src) {
@@ -204,7 +208,7 @@ void FileSystem::init_file(BLK_NO self, BLK_NO parent, bool isDir) {
     
     node.blkCount = 1;
     node.block[0] = allocate_block();
-    node.blkno = self;
+    node.blkNo = self;
     
     if (isDir) {
         node.isDir = true;
