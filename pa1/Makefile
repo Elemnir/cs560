@@ -1,10 +1,15 @@
+# Compiler options
 CXX=g++
 CC=gcc
 CFLAGS=-Wall
 CXXFLAGS=-c -Wall -std=c++11
 LDFLAGS=
+
+# Source files
 CXXSOURCES=fakefs/main.cpp fakefs/filesystem.cpp
 CXXOBJECTS=$(CXXSOURCES:.cpp=.o)
+
+# Executables
 CXXEXECUTABLE=fakefs/fakefs
 CEXECUTABLES=client/client server/server
 

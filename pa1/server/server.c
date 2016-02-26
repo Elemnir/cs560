@@ -13,14 +13,15 @@ void exec_shell(int client_fd)
 {
   char *argv[2];
 
-  argv[0] = "bash";
+  argv[0] = "fakefs";
   argv[1] = NULL;
   
   dup2(client_fd, 0);
   dup2(client_fd, 1);
   dup2(client_fd, 2);
-
-  execvp("bash", argv);
+  
+  printf("Running filesystem shell...\n");
+  execvp("fakefs", argv);
   perror("Exec failed.\n");
   exit(1);
 }
@@ -82,7 +83,6 @@ int main(int argc, char **argv)
 
     inet_ntop(AF_INET, &(((struct sockaddr_in *)(p->ai_addr))->sin_addr),
               ip, INET_ADDRSTRLEN);
-    printf("Trying to connect to: %s\n", ip);
 
     /* Get a socket */
     sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
@@ -105,8 +105,6 @@ int main(int argc, char **argv)
   if(p == NULL) {
     fprintf(stderr, "ERROR: Failed to bind.\n");
     exit(1);
-  } else {
-    printf("Successfully connected.\n");
   }
   
   /* Start listening for clients */
@@ -127,15 +125,12 @@ int main(int argc, char **argv)
     /* Print the connecting IP address */
     inet_ntop(client_addr.ss_family, get_in_addr((struct sockaddr *) &client_addr),
 							client_addrstr, sizeof(client_addrstr));
-    printf("Client %s connected.\n", client_addrstr);
 
     /* Fork the shell */
     if(!fork()) {
       exec_shell(client_fd);
       close(sock);
     }
-
-    printf("Client disconnected.\n");
   }
   
   /* Clean up */
