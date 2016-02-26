@@ -87,7 +87,6 @@ class FileSystem {
         T rval;
         fsfile.seekg(BLK_SIZE * blk);
         fsfile.read((char*) &rval, sizeof(T));
-        cout << "sizeof" << sizeof(T) << "\n";
         return rval;
     }
 

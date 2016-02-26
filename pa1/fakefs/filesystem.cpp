@@ -1,6 +1,7 @@
 #include "filesystem.hpp"
 
 #include <cstdio>
+#include <iomanip>
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -26,14 +27,15 @@ bool FileSystem::load(const string &fsname) {
     get_header();
     cdi = get<Inode>(header.root);
     map_current_dir();
-        
+    
+    /*
     printf("Header  (root: %d, flh: %d, avail: %d)\n", 
             header.root, header.flh, header.avail);
     printf("CDI     (blkno: %d, blks: %d, inodes: %d)\n", 
             cdi.blkNo, cdi.blkCount, cdi.inodeCount);
     auto t = get<Block>(cdi.block[0]);
     printf("Block (%s)\n", &(t.text));
-
+    */
     return true;
 }
 
@@ -241,7 +243,7 @@ void FileSystem::map_current_dir() {
     for (int i = 0; i < cdi.blkCount; i++) {
         ss.clear();
         ss.str(get<Block>(cdi.block[i]).text);
-        while (ss >> ptr >> name) {
+        while (ss >> hex >> ptr >> name) {
             cdd[name] = ptr;
         }
     }
