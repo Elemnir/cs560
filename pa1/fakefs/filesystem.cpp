@@ -1,5 +1,6 @@
 #include "filesystem.hpp"
 
+#include <cstdio>
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -7,12 +8,7 @@
 using namespace std;
 
 FileSystem::FileSystem(const string &fsname) {
-    if (load(fsname)) { 
-        // If we had to create the file, all of this is undefined
-        get_header();
-        cdi = get<Inode>(header.root);
-        map_current_dir();
-    }
+    load(fsname);
 }
 
 bool FileSystem::load(const string &fsname) {
@@ -25,7 +21,19 @@ bool FileSystem::load(const string &fsname) {
         cout << "Filesystem created, please run \"mkfs\"\n";
         return false;
     }
+    
     cout << "Filesystem loaded\n";
+    get_header();
+    cdi = get<Inode>(header.root);
+    map_current_dir();
+        
+    printf("Header  (root: %d, flh: %d, avail: %d)\n", 
+            header.root, header.flh, header.avail);
+    printf("CDI     (blkno: %d, blks: %d, inodes: %d)\n", 
+            cdi.blkNo, cdi.blkCount, cdi.inodeCount);
+    auto t = get<Block>(cdi.block[0]);
+    printf("Block (%s)\n", &(t.text));
+
     return true;
 }
 

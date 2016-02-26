@@ -1,6 +1,7 @@
 #ifndef FILESYSTEM_HPP
 #define FILESYSTEM_HPP
 
+#include <iostream>
 #include <fstream>
 #include <map>
 #include <string>
@@ -54,12 +55,11 @@ class FileSystem {
     struct Inode {
         Inode() : blkCount(0), inodeCount(0), len(0), 
             isDir(false), prev(0), next(0) {};
-        BLK_NO prev, next;
+        BLK_NO prev, next, blkNo;
         BLK_CT blkCount, inodeCount;
         size_t len;
         bool isDir;
         BLK_NO block[512] = {0};
-        BLK_NO blkNo;
     };
 
     struct Block {
@@ -81,12 +81,13 @@ class FileSystem {
     // Setters and Getters for the Header, Inodes, Blocks, and FreeListNodes
     void    get_header();
     void    set_header();
-    
+
     template<class T>
     T get(const BLK_NO blk) {
         T rval;
         fsfile.seekg(BLK_SIZE * blk);
         fsfile.read((char*) &rval, sizeof(T));
+        cout << "sizeof" << sizeof(T) << "\n";
         return rval;
     }
 
