@@ -1,5 +1,7 @@
 #include "filesystem.hpp"
 
+#include <cstdio>
+#include <iomanip>
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -7,12 +9,7 @@
 using namespace std;
 
 FileSystem::FileSystem(const string &fsname) {
-    if (load(fsname)) { 
-        // If we had to create the file, all of this is undefined
-        get_header();
-        cdi = get<Inode>(header.root);
-        map_current_dir();
-    }
+    load(fsname);
 }
 
 bool FileSystem::load(const string &fsname) {
@@ -25,7 +22,20 @@ bool FileSystem::load(const string &fsname) {
         cout << "Filesystem created, please run \"mkfs\"\n";
         return false;
     }
+    
     cout << "Filesystem loaded\n";
+    get_header();
+    cdi = get<Inode>(header.root);
+    map_current_dir();
+    
+    /*
+    printf("Header  (root: %d, flh: %d, avail: %d)\n", 
+            header.root, header.flh, header.avail);
+    printf("CDI     (blkno: %d, blks: %d, inodes: %d)\n", 
+            cdi.blkNo, cdi.blkCount, cdi.inodeCount);
+    auto t = get<Block>(cdi.block[0]);
+    printf("Block (%s)\n", &(t.text));
+    */
     return true;
 }
 
@@ -79,7 +89,7 @@ void FileSystem::open(const string &fname, const string& mode) {
         fh.inode = get<Inode>(blk);
         fh.curr = get<Block>(fh.inode.block[0]);
     } else {
-        cerr << "File not found.\n";
+        cout << "File not found.\n";
         return;
     }
     
@@ -202,16 +212,23 @@ void FileSystem::free_block(BLK_NO blk) {
 }
 
 void FileSystem::init_file(BLK_NO self, BLK_NO parent, bool isDir) {
+    Block blk;
     Inode node = get<Inode>(self);
+    Inode par  = get<Inode>(parent);
+    
     node.blkCount = 1;
     node.block[0] = allocate_block();
     node.blkNo = self;
     
     if (isDir) {
         node.isDir = true;
-        Block blk = get<Block>(node.block[0]);
+        blk = get<Block>(node.block[0]);
         node.len = sprintf(&blk, "%x .\n%x ..\n", self, parent);
         set<Block>(node.block[0], blk);
+    }
+
+    // Add the file to the current directory
+    if (self != parent) {
     }
 
     set<Inode>(self, node);
@@ -226,7 +243,7 @@ void FileSystem::map_current_dir() {
     for (int i = 0; i < cdi.blkCount; i++) {
         ss.clear();
         ss.str(get<Block>(cdi.block[i]).text);
-        while (ss >> ptr >> name) {
+        while (ss >> hex >> ptr >> name) {
             cdd[name] = ptr;
         }
     }
