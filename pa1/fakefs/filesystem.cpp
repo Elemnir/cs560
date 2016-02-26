@@ -79,7 +79,7 @@ void FileSystem::open(const string &fname, const string& mode) {
         fh.inode = get<Inode>(blk);
         fh.curr = get<Block>(fh.inode.block[0]);
     } else {
-        cerr << "File not found.\n";
+        cout << "File not found.\n";
         return;
     }
     
@@ -198,16 +198,23 @@ void FileSystem::free_block(BLK_NO blk) {
 }
 
 void FileSystem::init_file(BLK_NO self, BLK_NO parent, bool isDir) {
+    Block blk;
     Inode node = get<Inode>(self);
+    Inode par  = get<Inode>(parent);
+    
     node.blkCount = 1;
     node.block[0] = allocate_block();
     node.blkno = self;
     
     if (isDir) {
         node.isDir = true;
-        Block blk = get<Block>(node.block[0]);
+        blk = get<Block>(node.block[0]);
         node.len = sprintf(&blk, "%x .\n%x ..\n", self, parent);
         set<Block>(node.block[0], blk);
+    }
+
+    // Add the file to the current directory
+    if (self != parent) {
     }
 
     set<Inode>(self, node);
