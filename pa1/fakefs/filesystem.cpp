@@ -76,7 +76,7 @@ void FileSystem::close(int fd) {
 }
 
 void FileSystem::mkdir(const string &dir) {
-    init_dir(allocate_block(), cdi.blkno);
+    init_dir(allocate_block(), cdi.blkNo);
 }
 
 void FileSystem::rmdir(const string &dir) {
@@ -107,6 +107,7 @@ void FileSystem::dir_tree() {
 }
 
 void FileSystem::import_file(const string &src, const string &dest) {
+
 }
 
 void FileSystem::export_file(const string &dest, const string &src) {
@@ -159,7 +160,7 @@ void FileSystem::init_dir(BLK_NO self, BLK_NO parent) {
     node.isDir = true;
     node.blkCount = 1;
     node.block[0] = allocate_block();
-    node.blkno = self;
+    node.blkNo = self;
 
     Block blk = get<Block>(node.block[0]);
     node.len = sprintf(&blk, "%x .\n%x ..\n", self, parent);

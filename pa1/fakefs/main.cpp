@@ -46,9 +46,12 @@ void parse(const string &str) {
     } else if (cmd == "write") {
         if (ss >> fd) {
             // Read in the rest of the line to write to the file
-            while(ss >> sarg1) {
-              fs.write(fd, sarg1);
-            }
+            // Also ignore surrounding quotes and spaces
+						getline(ss, sarg1);
+						size_t strBegin = sarg1.find_first_not_of(" \"");
+						size_t strEnd = sarg1.find_last_not_of(" \"");
+						sarg1 = sarg1.substr(strBegin, strEnd - strBegin + 1);
+						fs.write(fd, sarg1);
         } else {
             cerr << "Bad file descriptor for write." << endl;
         }
