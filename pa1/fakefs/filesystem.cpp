@@ -50,7 +50,7 @@ void FileSystem::format() {
     
     // Initialize the root directory Inode and first Block
     header.root = allocate_block();
-    init_dir(header.root, header.root);
+    init_file(header.root, header.root, true);
     set_header();
     cdi = get<Inode>(header.root);
     map_current_dir();
@@ -58,11 +58,43 @@ void FileSystem::format() {
 }
 
 void FileSystem::open(const string &fname, const string& mode) {
-    if (cdd.find(fname) != cdd.end()) {
-        // The file exists
-    } else {
-        // Gotta make it
+    int i;
+    FileHandle fh;
+    if (mode != "w" && mode != "r") {
+        cout << "Invalid mode: " << mode << endl;
+        return;
     }
+    fh.write = mode == "w";
+    fh.read  = mode == "r";
+
+    if (cdd.find(fname) != cdd.end()) {
+        // Open the file if it exists
+        fh.inode = get<Inode>(cdd[fname]);
+        fh.curr = get<Block>(fh.inode.block[0]);
+    } else if (mode == "w") {
+        // Make the file if it doesn't exist
+        BLK_NO blk = allocate_block();
+        init_file(blk, cdi.blkno, false);
+        map_current_dir();
+        fh.inode = get<Inode>(blk);
+        fh.curr = get<Block>(fh.inode.block[0]);
+    } else {
+        cerr << "File not found.\n";
+        return;
+    }
+    
+    // Find a file descriptor and store the FileHandle in opened
+    for (i = 0; i < opened.size(); i++) {
+        if (!opened[i].valid) {
+            opened[i] = fh;
+            break;
+        }
+    }
+    if (i = opened.size()) {
+        opened.push_back(fh);
+    }
+
+    cout << "SUCCESS, fd=" << i << "\n";
 }
 
 void FileSystem::read(int fd, int size) {
@@ -75,10 +107,16 @@ void FileSystem::seek(int fd, int offset) {
 }
 
 void FileSystem::close(int fd) {
+    if (opened.size() > fd && opened[fd].valid) {
+        opened[fd].valid = false;
+    } else {
+        cout << "Bad file descriptor " << fd << "\n";
+    }
 }
 
 void FileSystem::mkdir(const string &dir) {
-    init_dir(allocate_block(), cdi.blkNo);
+    init_file(allocate_block(), cdi.blkno, true);
+    map_current_dir();
 }
 
 void FileSystem::rmdir(const string &dir) {
@@ -92,14 +130,17 @@ void FileSystem::chdir(const string &dir) {
             cdi = node;
             map_current_dir();
         } else {
-            // Not a dir error
+            cout << dir << " is not a directory\n";
         }
     } else {
-        // Directory doesn't exist
+        cout << "file not found\n";
     }
 }
 
 void FileSystem::dir_list() {
+    for (const auto& i : cdd) {
+        cout << i.first << "\n";
+    }
 }
 
 void FileSystem::dump(const string &fname) {
@@ -157,18 +198,20 @@ void FileSystem::free_block(BLK_NO blk) {
     set<FreeListNode>(blk, node);
 }
 
-void FileSystem::init_dir(BLK_NO self, BLK_NO parent) {
+void FileSystem::init_file(BLK_NO self, BLK_NO parent, bool isDir) {
     Inode node = get<Inode>(self);
-    node.isDir = true;
     node.blkCount = 1;
     node.block[0] = allocate_block();
-    node.blkNo = self;
-
-    Block blk = get<Block>(node.block[0]);
-    node.len = sprintf(&blk, "%x .\n%x ..\n", self, parent);
+    node.blkno = self;
+    
+    if (isDir) {
+        node.isDir = true;
+        Block blk = get<Block>(node.block[0]);
+        node.len = sprintf(&blk, "%x .\n%x ..\n", self, parent);
+        set<Block>(node.block[0], blk);
+    }
 
     set<Inode>(self, node);
-    set<Block>(node.block[0], blk);
 }
 
 void FileSystem::map_current_dir() {
