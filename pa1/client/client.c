@@ -13,8 +13,8 @@
 int main(int argc, char **argv)
 {
   struct addrinfo hints, *info, *p;
-  int retval, portnum, sock, len, received;
-  char ip4[INET_ADDRSTRLEN], buf[MAXDATASIZE];
+  int retval, portnum, sock, received;
+  char ip4[INET_ADDRSTRLEN];
   char *msg = malloc(sizeof(char) * 1000);
   fd_set readfds, masterfds;
 
