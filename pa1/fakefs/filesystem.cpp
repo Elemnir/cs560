@@ -1,6 +1,8 @@
 #include "filesystem.hpp"
 
 #include <iostream>
+#include <string>
+#include <sstream>
 
 using namespace std;
 
@@ -170,5 +172,16 @@ void FileSystem::init_dir(BLK_NO self, BLK_NO parent) {
 }
 
 void FileSystem::map_current_dir() {
+    stringstream ss;
+    BLK_NO ptr;
+    string name;
     
+    cdd.clear();
+    for (int i = 0; i < cdi.blkCount; i++) {
+        ss.clear();
+        ss.str(get<Block>(cdi.block[i]).text);
+        while (ss >> ptr >> name) {
+            cdd[name] = ptr;
+        }
+    }
 }
