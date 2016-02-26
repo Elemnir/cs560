@@ -18,9 +18,9 @@ $(CXXEXECUTABLE): $(CXXOBJECTS)
 
 # Compile server and client
 client/client: client/client.c
-	$(CC) $(CFLAGS) $< -o $@
 server/server: server/server.c
-	$(CC) $(CFLAGS) $< -o $@
+CEXECUTABLES:
+	$(CC) $(CFLAGS) $^ -o $@
 
 # Clean
 clean:
