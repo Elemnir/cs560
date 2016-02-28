@@ -9,7 +9,7 @@
 
 #define BLK_SIZE 4096
 #define BLK_COUNT 25600
-
+#define INODE_SLOTS 512
 typedef unsigned int BLK_NO;
 typedef unsigned int BLK_CT;
 typedef unsigned int OFFSET;
@@ -24,10 +24,10 @@ class FileSystem {
     bool load(const string &fname);
     void format();
     void open(const string &fname, const string& mode);
-    void read(int fd, int size);
-    void write(int fd, const string &str);
-    void seek(int fd, int offset);
-    void close(int fd);
+    void read(unsigned fd, size_t size);
+    void write(unsigned fd, const string &str);
+    void seek(unsigned fd, size_t offset);
+    void close(unsigned fd);
     void mkdir(const string &dir);
     void rmdir(const string &dir);
     void chdir(const string &dir);
@@ -53,13 +53,12 @@ class FileSystem {
     };
 
     struct Inode {
-        Inode() : blkCount(0), inodeCount(0), len(0), 
-            isDir(false), prev(0), next(0) {};
-        BLK_NO prev, next, blkNo;
-        BLK_CT blkCount, inodeCount;
+        Inode() : first(0), next(0), blkCt(0), len(0), isDir(false) {};
+        BLK_NO first, next, blkNo;
+        BLK_CT blkCt;
         size_t len;
         bool isDir;
-        BLK_NO block[512] = {0};
+        BLK_NO block[INODE_SLOTS] = {0};
     };
 
     struct Block {
@@ -69,10 +68,11 @@ class FileSystem {
     };
     
     struct FileHandle {
-        FileHandle() : seek(0), read(false), write(false), valid(true) {};
+        FileHandle() : seek(0), currNo(0), read(false), write(false), 
+            valid(true) {};
         OFFSET seek;
+        BLK_NO currNo;
         Inode inode;
-        Block curr;
         bool read, write, valid;
     };
 
@@ -101,7 +101,7 @@ class FileSystem {
     void   free_block(BLK_NO blk);
 
     // Directory and File tools
-    void init_file(BLK_NO self, BLK_NO parent, bool isDir);
+    void init_file(BLK_NO self, BLK_NO parent, bool isDir, const string &fname);
     void map_current_dir();
 
     // Handle to storage, the FS Header, and the Current Directory

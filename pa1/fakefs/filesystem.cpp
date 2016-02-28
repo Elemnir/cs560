@@ -60,7 +60,7 @@ void FileSystem::format() {
     
     // Initialize the root directory Inode and first Block
     header.root = allocate_block();
-    init_file(header.root, header.root, true);
+    init_file(header.root, header.root, true, "/");
     set_header();
     cdi = get<Inode>(header.root);
     map_current_dir();
@@ -68,7 +68,7 @@ void FileSystem::format() {
 }
 
 void FileSystem::open(const string &fname, const string& mode) {
-    int i;
+    size_t i;
     FileHandle fh;
     if (mode != "w" && mode != "r") {
         cout << "Invalid mode: " << mode << endl;
@@ -80,14 +80,14 @@ void FileSystem::open(const string &fname, const string& mode) {
     if (cdd.find(fname) != cdd.end()) {
         // Open the file if it exists
         fh.inode = get<Inode>(cdd[fname]);
-        fh.curr = get<Block>(fh.inode.block[0]);
+        fh.currNo = fh.inode.block[0];
     } else if (mode == "w") {
         // Make the file if it doesn't exist
         BLK_NO blk = allocate_block();
-        init_file(blk, cdi.blkNo, false);
+        init_file(blk, cdi.blkNo, false, fname);
         map_current_dir();
         fh.inode = get<Inode>(blk);
-        fh.curr = get<Block>(fh.inode.block[0]);
+        fh.currNo = fh.inode.block[0];
     } else {
         cout << "File not found.\n";
         return;
@@ -100,39 +100,70 @@ void FileSystem::open(const string &fname, const string& mode) {
             break;
         }
     }
-    if (i = opened.size()) {
+    if (i == opened.size()) {
         opened.push_back(fh);
     }
 
     cout << "SUCCESS, fd=" << i << "\n";
 }
 
-void FileSystem::read(int fd, int size) {
+//inod = iblk / INODE_SLOTS; // Calculate the Inode index in the chain
+//index = iblk % INODE_SLOTS; // Calculate Block index within the Inode
+//pos = offset % BLK_SIZE; // Calculate the Offset within the block
+ 
+void FileSystem::read(unsigned fd, size_t size) {
   
 }
 
-void FileSystem::write(int fd, const string &str) {
-}
-
-void FileSystem::seek(int fd, int offset) {
-    //make sure fd is correct
-
-}
-
-void FileSystem::close(int fd) {
-    if (opened.size() > fd && opened[fd].valid) {
-        opened[fd].valid = false;
-    } else {
+void FileSystem::write(unsigned fd, const string &str) {
+    size_t size = str.size();
+    Inode fhead;
+    Block curr;
+    if (opened.size() <= fd || !opened[fd].valid) {
         cout << "Bad file descriptor " << fd << "\n";
+    } else {
+        fhead = get<Inode>(opened[fd].inode.first);
+    }
+}
+
+void FileSystem::seek(unsigned fd, size_t offset) {
+    size_t iblk, inod;
+    Inode head, itmp;
+    if (opened.size() <= fd || !opened[fd].valid) {
+        cout << "Bad file descriptor " << fd << "\n";
+    } else {
+        head = get<Inode>(opened[fd].inode.first);
+        if (head.len <= offset) {
+            offset = head.len-1;
+        }
+
+        iblk = offset / BLK_SIZE; // Calculate the Global Block Index
+        inod = iblk / INODE_SLOTS;
+        itmp = head;
+        while (inod-- > 0) {
+            itmp = get<Inode>(itmp.next);
+        }
+        opened[fd].inode = itmp;
+        opened[fd].currNo = iblk;
+        opened[fd].seek = offset;
+    }
+}
+
+void FileSystem::close(unsigned fd) {
+    if (opened.size() <= fd || !opened[fd].valid) {
+        cout << "Bad file descriptor " << fd << "\n";
+    } else {
+        opened[fd].valid = false;
     }
 }
 
 void FileSystem::mkdir(const string &dir) {
-    init_file(allocate_block(), cdi.blkNo, true);
+    init_file(allocate_block(), cdi.blkNo, true, dir);
     map_current_dir();
 }
 
 void FileSystem::rmdir(const string &dir) {
+
 }
 
 void FileSystem::chdir(const string &dir) {
@@ -157,6 +188,19 @@ void FileSystem::dir_list() {
 }
 
 void FileSystem::dump(const string &fname) {
+    Inode head, node;
+    Block blk;
+    BLK_NO next;
+    if (cdd.find(fname) == cdd.end()) {
+        cout << "File not found: " << fname << "\n";
+    } else if (get<Inode>(cdd[fname]).isDir) {
+        cout << fname << " is a directory.\n";
+    } else {
+        node = get<Inode>(cdd[fname]);
+        for (size_t rem = node.len, i = 0; rem > 0; rem -= BLK_SIZE) {
+        }
+
+    }
 }
 
 void FileSystem::dir_tree() {
@@ -211,14 +255,15 @@ void FileSystem::free_block(BLK_NO blk) {
     set<FreeListNode>(blk, node);
 }
 
-void FileSystem::init_file(BLK_NO self, BLK_NO parent, bool isDir) {
+void FileSystem::init_file(BLK_NO self, BLK_NO parent, bool isDir, const string &name) {
+    char buf[1024];
     Block blk;
     Inode node = get<Inode>(self);
     Inode par  = get<Inode>(parent);
     
-    node.blkCount = 1;
+    node.blkCt = 1;
     node.block[0] = allocate_block();
-    node.blkNo = self;
+    node.blkNo = node.first = self;
     
     if (isDir) {
         node.isDir = true;
@@ -229,8 +274,18 @@ void FileSystem::init_file(BLK_NO self, BLK_NO parent, bool isDir) {
 
     // Add the file to the current directory
     if (self != parent) {
+        size_t len = snprintf(buf, 1024, "%x %s\n", self, name.c_str());
+        BLK_CT i = (par.len + len) / BLK_SIZE;
+        if (i != (par.len / BLK_SIZE)) {
+            par.len += BLK_SIZE - (par.len % BLK_SIZE);
+            par.block[i] = allocate_block();
+            par.blkCt++;
+        }
+        blk = get<Block>(par.block[i]);
+        par.len += sprintf(&blk + (par.len % BLK_SIZE), "%s", buf);
+        set<Block>(par.block[i], blk);
+        set<Inode>(parent, par);
     }
-
     set<Inode>(self, node);
 }
 
@@ -240,7 +295,7 @@ void FileSystem::map_current_dir() {
     string name;
     
     cdd.clear();
-    for (int i = 0; i < cdi.blkCount; i++) {
+    for (BLK_CT i = 0; i < cdi.blkCt; i++) {
         ss.clear();
         ss.str(get<Block>(cdi.block[i]).text);
         while (ss >> hex >> ptr >> name) {
