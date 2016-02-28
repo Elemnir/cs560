@@ -213,7 +213,36 @@ functions are implemented in the \texttt{Filesystem} class:
     filename \texttt{.disk.ffs}), and simply opens it if it does. Else, it
     creates the filesystem and prompts the user to use the \texttt{mkfs} command
     to initialize the filesystem.
-  \item[\texttt{}] end
+  \item[\texttt{format}] simply blanks out the filesystem and initializes the
+    header and the first inode (representing the root directory).
+  \item[\texttt{open}] opens a file in the virtual filesystem and stores its
+    file descriptor for later usage. If it does not exist or the mode is
+    invalid, it throws an error.
+  \item[\texttt{read}] 
+  \item[\texttt{write}] writes to the end of the file specified.
+  \item[\texttt{seek}] Moves the pointer in a file to a separate location,
+    absolutely. If the file descriptor is bad, it throws an error, but otherwise
+    it sets the \texttt{seek}, \texttt{currNo}, and \texttt{inode} variables in
+    the file handle to point to the specified offset in the file.
+  \item[\texttt{close}] closes a file descriptor.
+  \item[\texttt{mkdir}] uses lower-level functions such as \texttt{init\_file}
+    to allocate a new block for the inode, add the directory to the current
+    directory, and then remap the current directory's contents for quick access
+    later.
+  \item[\texttt{rmdir}] removes a directory from the current directory. It
+    throws an error if the directory does not exist.
+  \item[\texttt{chdir}] changes the user's directory. It updates the
+    \texttt{cdi} variable, which is the current directory's inode, and also
+    updates the map of inodes to files that are in the current directory.
+  \item[\texttt{dir\_list}] lists the files and directories in the current
+    directory.
+  \item[\texttt{dump}] lists the contents of a file. It simply iterates over the
+    blocks that are associated with the file, and prints them out.
+  \item[\texttt{dir\_tree}] lists the current directory in a recursive tree
+    structure.
+  \item[\texttt{import\_file}] opens a file from the native filesystem and
+    imports it into the virtual one. It essentially performs multiple
+    \texttt{write} calls to 
 \end{description}
 
 %----------------------------------------------------------------------------------------
