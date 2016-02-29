@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/wait.h>
 #include <netdb.h>
 #include <errno.h>
 #include <string.h>
@@ -57,6 +58,9 @@ int main(int argc, char **argv)
   socklen_t client_addr_size;
   int client_fd;
 	char client_addrstr[INET6_ADDRSTRLEN];
+
+  /* To wait for the forked process */
+  int status;
 
   /* Handle arguments */
   if(argc != 2) {
@@ -112,31 +116,29 @@ int main(int argc, char **argv)
   
   /* Start listening for clients */
   if(listen(sock, backlog) == -1) {
-    /*perror("");*/
     exit(1);
   }
 
   client_addr_size = sizeof(client_addr);
-  while(1) {
-    /* Accept a connection */
-    client_fd = accept(sock, (struct sockaddr *)&client_addr, &client_addr_size);
-    if(client_fd == -1) {
-      perror("");
-      continue;
-    }
-    
-    /* Print the connecting IP address */
-    inet_ntop(client_addr.ss_family, get_in_addr((struct sockaddr *) &client_addr),
-							client_addrstr, sizeof(client_addrstr));
 
-    /* Fork the shell */
-    if(!fork()) {
-      exec_shell(client_fd);
-      close(sock);
-    }
-    printf("Getting here.\n");
-    exit(0);
+  /* Accept a connection */
+  client_fd = accept(sock, (struct sockaddr *)&client_addr, &client_addr_size);
+  if(client_fd == -1) {
+    perror("");
+    exit(1);
   }
+  
+  /* Print the connecting IP address */
+  inet_ntop(client_addr.ss_family, get_in_addr((struct sockaddr *) &client_addr),
+            client_addrstr, sizeof(client_addrstr));
+
+  /* Fork the shell */
+  if(!fork()) {
+    exec_shell(client_fd);
+  }
+
+  /* Wait for the shell to exit */
+  wait(&status);
   
   /* Clean up */
   close(sock);
