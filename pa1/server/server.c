@@ -134,6 +134,8 @@ int main(int argc, char **argv)
       exec_shell(client_fd);
       close(sock);
     }
+    printf("Getting here.\n");
+    exit(0);
   }
   
   /* Clean up */
