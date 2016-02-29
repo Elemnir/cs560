@@ -1,0 +1,223 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Journal Article
+% LaTeX Template
+% Version 1.3 (9/9/13)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Frits Wenneker (http://www.howtotex.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[twoside]{article}
+
+\usepackage{lipsum} % Package to generate dummy text throughout this template
+
+\usepackage[sc]{mathpazo} % Use the Palatino font
+\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+\linespread{1.05} % Line spacing - Palatino needs more space between lines
+\usepackage{microtype} % Slightly tweak font spacing for aesthetics
+
+\usepackage[hmarginratio=1:1,top=32mm,columnsep=20pt]{geometry} % Document margins
+\usepackage{multicol} % Used for the two-column layout of the document
+\usepackage[hang, small,labelfont=bf,up,textfont=it,up]{caption} % Custom captions under/above floats in tables or figures
+\usepackage{booktabs} % Horizontal rules in tables
+\usepackage{float} % Required for tables and figures in the multi-column environment - they need to be placed in specific locations with the [H] (e.g. \begin{table}[H])
+\usepackage{hyperref} % For hyperlinks in the PDF
+
+\usepackage{lettrine} % The lettrine is the first enlarged letter at the beginning of the text
+\usepackage{paralist} % Used for the compactitem environment which makes bullet points with less space between them
+
+\usepackage{abstract} % Allows abstract customization
+\renewcommand{\abstractnamefont}{\normalfont\bfseries} % Set the "Abstract" text to bold
+\renewcommand{\abstracttextfont}{\normalfont\small\itshape} % Set the abstract itself to small italic text
+
+\usepackage{titlesec} % Allows customization of titles
+\renewcommand\thesection{\Roman{section}} % Roman numerals for the sections
+\renewcommand\thesubsection{\Roman{subsection}} % Roman numerals for subsections
+\titleformat{\section}[block]{\large\scshape\centering}{\thesection.}{1em}{} % Change the look of the section titles
+\titleformat{\subsection}[block]{\large}{\thesubsection.}{1em}{} % Change the look of the section titles
+
+\usepackage{fancyhdr} % Headers and footers
+\pagestyle{fancy} % All pages have headers and footers
+\fancyhead{} % Blank out the default header
+\fancyfoot{} % Blank out the default footer
+\fancyhead{} % Custom header text
+\fancyfoot[RO,LE]{\thepage} % Custom footer text
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\title{\vspace{-15mm}\fontsize{24pt}{10pt}\selectfont\textbf{Programming
+Assignment 1: Filesystem}} % Article title
+
+\author{
+\large
+\textsc{Ben Olson and Adam Howard} \\[2mm] % Your name
+\normalsize University of Tennessee, Knoxville \\ % Your institution
+\vspace{-5mm}
+}
+\date{}
+
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+\maketitle % Insert title
+
+\thispagestyle{fancy} % All pages have headers and footers
+
+%----------------------------------------------------------------------------------------
+%	ABSTRACT
+%----------------------------------------------------------------------------------------
+
+\begin{abstract}
+
+  The purpose of this assignment is to study the functionality of a filesystem,
+  and to support this knowledge with a practical application of one. In
+  addition, a simple shell should be implemented such that the filesystem has a
+  convenient user interface, as well as a method of remotely connecting to said
+  shell. These three parts of the program combine to give the student a
+  comprehensive understanding about how a simple remote connection server,
+  shell, and filesystem work.
+
+\end{abstract}
+
+%----------------------------------------------------------------------------------------
+%	ARTICLE CONTENTS
+%----------------------------------------------------------------------------------------
+
+\begin{multicols}{2} % Two-column layout throughout the main article text
+
+\section{Introduction}
+
+\lettrine[nindent=0em,lines=3]{T} his program can be separated into three parts,
+for the sake of dividing the work
+evenly between a group of two or three students. The first is the filesystem,
+which creates a file on disk that represents a disk, and can be written to and
+read from by a user.  The second is the shell, which is the interface through
+which the user communicates with the filesystem, and which simply reads text
+from \texttt{stdin} and calls functions that implement the filesystem.  The third and
+final section is an implementation of a remote shell, which simply allows
+connections on some socket and connects the remote user to the shell on the
+server machine.  This design document will first describe the compilation and
+usage of the project, and then describe in detail the implementations of each of
+the parts.
+
+%------------------------------------------------
+
+\section{Compilation}
+
+This program was intended to be run on a Linux system, although it will work on
+any system that supports \texttt{make} and POSIX sockets, and contains a modern
+C++ compiler, with perhaps minor modifications. To begin the compilation
+process, let us first examine the layout of the source directories:
+
+\begin{description}
+  \item[\texttt{server}] contains the single source file for the server
+    application.
+  \item[\texttt{client}] contains the single source file for the client
+    application.
+  \item[\texttt{fakefs}] contains the header and implementation of the
+    filesystem, as well as the shell.
+\end{description}
+
+To compile the complete application, one must simply use the provided GNU
+\texttt{Makefile}, by typing \texttt{make} into their shell. By default, this will compile the
+server, client, filesystem, and shell, and put one executable into each of the
+three source directories. To delete these executables and compile for a separate
+system, one may use the \texttt{make clean} command.
+
+%------------------------------------------------
+
+\section{Usage}
+
+The usage of the program is rather simple. For the sake of testing the program,
+one can simply run the \texttt{run.sh} script. This is a rather simple script
+that first compiles the programs (using \texttt{make} as described above),
+starts the server on port \texttt{30000} in the background, and then runs the
+client on the same port so that it connects to the server. This will bring up a
+shell with the required commands implemented.
+\\
+To use the program manually, one must first start the \texttt{server} program,
+with the \texttt{fakefs} executable in the user's \texttt{PATH} variable. The
+one argument that this program takes is the port number.  Next, execute the
+\texttt{client} executable on the same port, so that it connects to the server.
+Once connected successfully, begin typing commands on \texttt{stdin}.
+
+%------------------------------------------------
+
+\section{Implementation}
+
+In this section we will describe in detail the implementation of each of the
+three parts of the project, starting from the top and working down to the
+low-level workings of the filesystem.
+
+\subsection{Remote connection}
+
+The \texttt{server} and \texttt{client} source directories contain the source
+code for this part of the project, in \texttt{server.c} and \texttt{client.c}
+respectively. First, the server accepts a port number as an argument. If this
+argument is valid, it binds to that socket and begins to listen for clients. At
+this point, it cannot continue until the client program is run on the same
+socket. Once the client connects (using the \texttt{connect()} system call), the
+server continues by accepting the connection and forking off a new process which
+will run the shell. This process uses \texttt{dup2()} to forward all
+\texttt{stdout} from the shell to the socket (and consequently to the client),
+and gets all \texttt{stdin} from the socket as well. It uses \texttt{execvp} to
+execute the shell.
+\\
+The client is a bit more complicated, simply because it has to handle receiving
+text from the socket while also sending \texttt{stdin} to the socket. Normally,
+this might warrant a multiprocess solution, however, using the \texttt{select()}
+system call is entirely sufficient. This function creates a set of all file
+descriptors that can have text flowing through them, and selects the first one
+that has something coming from it. This way, the client can simply loop
+infinitely, select the file descriptor that has activity, and pipe input from
+\texttt{stdin} if no output is available to be received. This way, the user can
+simultaneously input text into the shell while receiving its output
+successfully.
+
+\subsection{Shell}
+
+This is by far the simplest of the three sections. Implemented in
+\texttt{fakefs/main.cpp}, it simply uses C++ stringstreams to read from
+\texttt{stdin} and output the results of the filesystem to \texttt{stdout}.
+Since this is the program that is launched by the server, the \texttt{stdin}
+comes from the socket that the client is connected to, and the \texttt{stdout}
+goes to the socket that is read by the client.
+\\
+When it receives a valid command, the shell calls the corresponding function in
+the filesystem.
+
+\subsection{Filesystem}
+
+The filesystem is the main purpose of the project, while the other parts are
+centered around the usage of the filesystem itself. Implemented in
+\texttt{fakefs/filesystem.cpp}, it includes functions for the shell to call to
+do a variety of modifications to the virtual disk. The following higher-level
+functions are implemented in the \texttt{Filesystem} class:
+
+\begin{description}
+  \item[\texttt{load}] checks to see if the virtual disk already exists (in the
+    filename \texttt{.disk.ffs}), and simply opens it if it does. Else, it
+    creates the filesystem and prompts the user to use the \texttt{mkfs} command
+    to initialize the filesystem.
+  \item[\texttt{}] end
+\end{description}
+
+%----------------------------------------------------------------------------------------
+
+\end{multicols}
+
+\end{document}
