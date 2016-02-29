@@ -1,6 +1,7 @@
 #include "filesystem.hpp"
 
 #include <cstdio>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -80,14 +81,12 @@ void FileSystem::open(const string &fname, const string& mode) {
     if (cdd.find(fname) != cdd.end()) {
         // Open the file if it exists
         fh.inode = get<Inode>(cdd[fname]);
-        fh.currNo = fh.inode.block[0];
     } else if (mode == "w") {
         // Make the file if it doesn't exist
         BLK_NO blk = allocate_block();
         init_file(blk, cdi.blkNo, false, fname);
         map_current_dir();
         fh.inode = get<Inode>(blk);
-        fh.currNo = fh.inode.block[0];
     } else {
         cout << "File not found.\n";
         return;
@@ -107,22 +106,91 @@ void FileSystem::open(const string &fname, const string& mode) {
     cout << "SUCCESS, fd=" << i << "\n";
 }
 
+//iblk = seek / BLK_SIZE;
 //inod = iblk / INODE_SLOTS; // Calculate the Inode index in the chain
 //index = iblk % INODE_SLOTS; // Calculate Block index within the Inode
-//pos = offset % BLK_SIZE; // Calculate the Offset within the block
+//pos = seek % BLK_SIZE; // Calculate the Offset within the block
  
 void FileSystem::read(unsigned fd, size_t size) {
-  
+    size_t len, iblk, pos, index, pre;
+    if (opened.size() <= fd || !opened[fd].valid) {
+        cout << "Bad file descriptor " << fd << "\n";
+    } else if (!opened[fd].read) {
+        cout << "File not open for reading.\n";
+    } else {
+        len = get<Inode>(opened[fd].inode.first).len;
+        if (size > len) {
+            size = len;
+        }
+        iblk = opened[fd].seek / BLK_SIZE;
+        pos = opened[fd].seek % BLK_SIZE;
+        index = iblk % INODE_SLOTS;
+        pre = (BLK_SIZE - pos > size) ? BLK_SIZE - pos : size;
+        
+        cout.write(&(get<Block>(opened[fd].inode.block[index]).text[pos]), pre);
+        for (size_t rem = size - pre, i = index + 1; rem > 0; rem -= BLK_SIZE) {
+            cout.write(get<Block>(opened[fd].inode.block[i++]).text, 
+                    (rem > BLK_SIZE) ? BLK_SIZE : rem);
+            if (i == INODE_SLOTS) {
+                opened[fd].inode = get<Inode>(opened[fd].inode.next);
+                i = 0;
+            }
+        }
+        opened[fd].seek += size;
+    }
 }
 
 void FileSystem::write(unsigned fd, const string &str) {
-    size_t size = str.size();
-    Inode fhead;
-    Block curr;
+    size_t len, iblk, pos, index, pre;
+    Block blk;
+    Inode head;
+    BLK_NO num;
     if (opened.size() <= fd || !opened[fd].valid) {
         cout << "Bad file descriptor " << fd << "\n";
+    } else if (!opened[fd].read) {
+        cout << "File not open for reading.\n";
     } else {
-        fhead = get<Inode>(opened[fd].inode.first);
+        len = str.size();
+        iblk = opened[fd].seek / BLK_SIZE;
+        pos = opened[fd].seek % BLK_SIZE;
+        index = iblk % INODE_SLOTS;
+        pre = (BLK_SIZE - pos > len) ? BLK_SIZE - pos : len;
+        
+        head = get<Inode>(opened[fd].inode.first);
+        if (len + opened[fd].seek > head.len) {
+            head.len = len + opened[fd].seek;
+            set<Inode>(head.blkNo, head);
+        }
+
+        blk = get<Block>(opened[fd].inode.block[index]);
+        strncpy(&(blk.text[pos]), str.c_str(), pre);
+        set<Block>(opened[fd].inode.block[index], blk);
+
+        for (size_t rem = len - pre, i = index + 1; rem > 0; rem -= BLK_SIZE) {
+            if (i < INODE_SLOTS && i >= opened[fd].inode.blkCt) {
+                opened[fd].inode.block[i] = allocate_block();
+                opened[fd].inode.blkCt++;
+                set<Inode>(opened[fd].inode.blkNo, opened[fd].inode);
+            }
+
+            blk = get<Block>(opened[fd].inode.block[i]);
+            strncpy(blk.text, str.c_str(), (rem > BLK_SIZE) ? BLK_SIZE : rem);
+            set<Block>(opened[fd].inode.block[i++], blk);
+            
+            if (i == INODE_SLOTS) {
+                if (opened[fd].inode.next == 0) {
+                    opened[fd].inode.next = num = allocate_block();
+                    set<Inode>(opened[fd].inode.blkNo, opened[fd].inode);
+                    opened[fd].inode = get<Inode>(opened[fd].inode.next);
+                    opened[fd].inode.blkNo = num;
+                    set<Inode>(num, opened[fd].inode);
+                } else {
+                    opened[fd].inode = get<Inode>(opened[fd].inode.next);
+                }
+                i = 0;
+            }
+        }
+        opened[fd].seek += len;
     }
 }
 
@@ -144,7 +212,6 @@ void FileSystem::seek(unsigned fd, size_t offset) {
             itmp = get<Inode>(itmp.next);
         }
         opened[fd].inode = itmp;
-        opened[fd].currNo = iblk;
         opened[fd].seek = offset;
     }
 }
@@ -188,9 +255,7 @@ void FileSystem::dir_list() {
 }
 
 void FileSystem::dump(const string &fname) {
-    Inode head, node;
-    Block blk;
-    BLK_NO next;
+    Inode node;
     if (cdd.find(fname) == cdd.end()) {
         cout << "File not found: " << fname << "\n";
     } else if (get<Inode>(cdd[fname]).isDir) {
@@ -198,8 +263,12 @@ void FileSystem::dump(const string &fname) {
     } else {
         node = get<Inode>(cdd[fname]);
         for (size_t rem = node.len, i = 0; rem > 0; rem -= BLK_SIZE) {
+            cout.write(get<Block>(node.block[i++]).text, (rem > BLK_SIZE) ? BLK_SIZE : rem);
+            if (i == INODE_SLOTS) {
+                node = get<Inode>(node.next);
+                i = 0;
+            }
         }
-
     }
 }
 
