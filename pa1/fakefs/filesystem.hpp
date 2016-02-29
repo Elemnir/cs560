@@ -68,10 +68,9 @@ class FileSystem {
     };
     
     struct FileHandle {
-        FileHandle() : seek(0), currNo(0), read(false), write(false), 
+        FileHandle() : seek(0), read(false), write(false), 
             valid(true) {};
         OFFSET seek;
-        BLK_NO currNo;
         Inode inode;
         bool read, write, valid;
     };
