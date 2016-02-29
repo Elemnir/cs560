@@ -24,11 +24,11 @@ class FileSystem {
 
     bool load(const string &fname, ostream &out = cout);
     void format();
-    void open(const string &fname, const string& mode, ostream &out = cout);
+    size_t open(const string &fname, const string& mode, ostream &out = cout);
     void read(unsigned fd, size_t size, ostream &out = cout);
     void write(unsigned fd, const string &str, ostream &out = cout);
     void seek(unsigned fd, size_t offset, ostream &out = cout);
-    void close(unsigned fd);
+    void close(unsigned fd, ostream &out = cout);
     void mkdir(const string &dir);
     void rmdir(const string &dir);
     void chdir(const string &dir);

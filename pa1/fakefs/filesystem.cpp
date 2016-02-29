@@ -1,5 +1,6 @@
 #include "filesystem.hpp"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <iomanip>
@@ -68,12 +69,12 @@ void FileSystem::format() {
     cout << "Filesystem initialized\n";
 }
 
-void FileSystem::open(const string &fname, const string& mode, ostream &out) {
+size_t FileSystem::open(const string &fname, const string& mode, ostream &out) {
     size_t i;
     FileHandle fh;
     if (mode != "w" && mode != "r") {
         out << "Invalid mode: " << mode << endl;
-        return;
+        return 0;
     }
     fh.write = mode == "w";
     fh.read  = mode == "r";
@@ -89,7 +90,7 @@ void FileSystem::open(const string &fname, const string& mode, ostream &out) {
         fh.inode = get<Inode>(blk);
     } else {
         out << "File not found.\n";
-        return;
+        return 0;
     }
     
     // Find a file descriptor and store the FileHandle in opened
@@ -104,6 +105,7 @@ void FileSystem::open(const string &fname, const string& mode, ostream &out) {
     }
 
     out << "SUCCESS, fd=" << i << "\n";
+    return i;
 }
 
 //iblk = seek / BLK_SIZE;
@@ -137,7 +139,6 @@ void FileSystem::read(unsigned fd, size_t size, ostream &out) {
             }
         }
         opened[fd].seek += size;
-        out << "SUCCESS seek=" << opened[fd].seek << "\n";
     }
 }
 
@@ -155,7 +156,7 @@ void FileSystem::write(unsigned fd, const string &str, ostream &out) {
         iblk = opened[fd].seek / BLK_SIZE;
         pos = opened[fd].seek % BLK_SIZE;
         index = iblk % INODE_SLOTS;
-        pre = (BLK_SIZE - pos > len) ? BLK_SIZE - pos : len;
+        pre = (BLK_SIZE - pos < len) ? BLK_SIZE - pos : len;
         
         head = get<Inode>(opened[fd].inode.first);
         if (len + opened[fd].seek > head.len) {
@@ -175,7 +176,7 @@ void FileSystem::write(unsigned fd, const string &str, ostream &out) {
             }
 
             blk = get<Block>(opened[fd].inode.block[i]);
-            strncpy(blk.text, str.c_str(), (rem > BLK_SIZE) ? BLK_SIZE : rem);
+            strncpy(blk.text, str.c_str() + (len - rem), (rem > BLK_SIZE) ? BLK_SIZE : rem);
             set<Block>(opened[fd].inode.block[i++], blk);
             
             if (i == INODE_SLOTS) {
@@ -219,11 +220,12 @@ void FileSystem::seek(unsigned fd, size_t offset, ostream &out) {
     }
 }
 
-void FileSystem::close(unsigned fd) {
+void FileSystem::close(unsigned fd, ostream &out) {
     if (opened.size() <= fd || !opened[fd].valid) {
-        cout << "Bad file descriptor " << fd << "\n";
+        out << "Bad file descriptor " << fd << "\n";
     } else {
         opened[fd].valid = false;
+        out << fd << " closed\n";
     }
 }
 
@@ -276,12 +278,8 @@ void FileSystem::dump(const string &fname) {
 }
 
 void FileSystem::dir_tree() {
-    static Inode cdi_save;
     static int depth = 0;
     auto cdd_cur = cdd;
-    if (depth == 0) {
-        cdi_save = cdi;
-    }
     for (const auto& i: cdd_cur) {
         if (i.first == "." || i.first == "..") {
             continue;
@@ -295,18 +293,46 @@ void FileSystem::dir_tree() {
             depth -= 1;
         }
     }
-    if (depth == 0) {
-        cdi = cdi_save;
-        map_current_dir();
-    }
-
 }
 
 void FileSystem::import_file(const string &src, const string &dest) {
-
+    ifstream ext(src, ifstream::binary);
+    stringstream ss;
+    size_t fd; char buf[BLK_SIZE + 1] = {0};
+    if (ext.fail()) {
+        cout << "Could not open " << src << " on external filesystem\n";
+    } else {
+        fd = open(dest, "w", ss);
+        while (ext.read(buf, BLK_SIZE)) {
+            ss.str(""); ss.clear();             
+            write(fd, buf, ss);
+            fill(buf, buf+BLK_SIZE, 0);
+        }
+        ss.str(""); ss.clear();             
+        write(fd, buf, ss);
+        close(fd, ss);
+    }
 }
 
-void FileSystem::export_file(const string &dest, const string &src) {
+void FileSystem::export_file(const string &src, const string &dest) {
+    ofstream ext(dest);
+    stringstream ss;
+    size_t fd; long rem;
+    if (cdd.find(src) == cdd.end()) {
+        cout << "File " << src << " not found in local filesystem\n";
+    } else if (ext.fail()) {
+        cout << "Could not open " << dest << " on external filesystem\n";
+    } else {
+        rem = get<Inode>(cdd[src]).len;
+        fd = open(src, "r", ss);
+        while (rem > 0) {
+            ss.str(""); ss.clear();
+            read(fd, (rem > BLK_SIZE) ? BLK_SIZE : rem, ss);
+            ext.write(ss.str().c_str(), ss.str().size());
+            rem -= BLK_SIZE;
+        }
+        close(fd, ss);
+    }
 }
 
 /* Internals */
