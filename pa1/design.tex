@@ -241,8 +241,32 @@ functions are implemented in the \texttt{Filesystem} class:
   \item[\texttt{dir\_tree}] lists the current directory in a recursive tree
     structure.
   \item[\texttt{import\_file}] opens a file from the native filesystem and
-    imports it into the virtual one. It essentially performs multiple
-    \texttt{write} calls to 
+    imports it into the virtual one.
+  \item[\texttt{export\_file}] opens a file in the virtual filesystem and
+    exports it to the native one.
+\end{description}
+
+Each of these functions implements a command listed in the project description,
+but uses lower-level functions to ease writing them. These internal functions
+perform the most common operations in the filesystem, and allowed us to
+implement the above functions easily.
+
+\begin{description}
+  \item[\texttt{get\_header} and \texttt{set\_header}] respectively read and
+    write to or from a block in the filesystem, so that higher-level functions
+    can simply modify a data structure and rewrite it to disk with ease.
+  \item[\texttt{allocate\_block}] allocates a new block in the virtual disk,
+    which can be used to store an inode, a part of a file, the header to the
+    filesystem, or any other data structure that the filesystem needs to store.
+    It then returns the number of the block that it allocated, if successful.
+    All high-level functions that write to the filesystem use this function.
+  \item[\texttt{free\_block}] deallocates a block in the filesystem.
+  \item[\texttt{init\_file}] initializes a new inode in a specific directory,
+    and initializes all of its data structures. This file can be a normal file
+    or a directory, as indicated by the argument \texttt{isDir}.
+  \item[\texttt{map\_current\_dir}] refills the map of files in the current
+    directory, \texttt{cdd}. This data structure is used by multiple other
+    functions to loop over the file in the current directory.
 \end{description}
 
 %----------------------------------------------------------------------------------------
