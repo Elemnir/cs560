@@ -12,5 +12,3 @@ sleep 1
 
 echo "Starting client."
 ./client/client 30000
-
-kill $!

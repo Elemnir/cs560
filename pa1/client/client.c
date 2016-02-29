@@ -94,9 +94,10 @@ int main(int argc, char **argv)
       received = read(0, msg, 999);
       if(received == -1) {
         perror("");
-        close(0);
-        close(sock);
-        exit(1);
+        break;
+      } else if(received == 0) {
+        /* The server shut down */
+        break;
       } else {
         write(sock, msg, received);
       }
@@ -104,9 +105,11 @@ int main(int argc, char **argv)
     if(FD_ISSET(sock, &readfds)) {
       received = recv(sock, msg, 999, 0);
       if(received == -1) {
-        close(0);
-        close(sock);
-        exit(1);
+        perror("");
+        break;
+      } else if(received == 0) {
+        /* The server shut down */
+        break;
       } else {
         write(1, msg, received);
       }
