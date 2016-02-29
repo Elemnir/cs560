@@ -10,6 +10,7 @@
 #define BLK_SIZE 4096
 #define BLK_COUNT 25600
 #define INODE_SLOTS 512
+
 typedef unsigned int BLK_NO;
 typedef unsigned int BLK_CT;
 typedef unsigned int OFFSET;
@@ -21,12 +22,12 @@ class FileSystem {
     FileSystem() {};
     FileSystem(const string& fsname);
 
-    bool load(const string &fname);
+    bool load(const string &fname, ostream &out = cout);
     void format();
-    void open(const string &fname, const string& mode);
-    void read(unsigned fd, size_t size);
-    void write(unsigned fd, const string &str);
-    void seek(unsigned fd, size_t offset);
+    void open(const string &fname, const string& mode, ostream &out = cout);
+    void read(unsigned fd, size_t size, ostream &out = cout);
+    void write(unsigned fd, const string &str, ostream &out = cout);
+    void seek(unsigned fd, size_t offset, ostream &out = cout);
     void close(unsigned fd);
     void mkdir(const string &dir);
     void rmdir(const string &dir);

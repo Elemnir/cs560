@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -11,12 +12,14 @@ void parse(const string &str);
 static FileSystem fs;
 
 int main(int argc, char** argv) {
-    string line, fsname = (argc > 1) ? argv[1] : ".disk.ffs";
+    string line, prompt = "fakefs> ", fsname = (argc > 1) ? argv[1] : "disk.ffs";
     
     fs.load(fsname);
     
+    cout << prompt;
     while (getline(cin, line)) {
         parse(line);
+        cout << prompt;
     }
 }
 
@@ -47,11 +50,11 @@ void parse(const string &str) {
         if (ss >> fd) {
             // Read in the rest of the line to write to the file
             // Also ignore surrounding quotes and spaces
-						getline(ss, sarg1);
-						size_t strBegin = sarg1.find_first_not_of(" \"");
-						size_t strEnd = sarg1.find_last_not_of(" \"");
-						sarg1 = sarg1.substr(strBegin, strEnd - strBegin + 1);
-						fs.write(fd, sarg1);
+            getline(ss, sarg1);
+            size_t strBegin = sarg1.find_first_not_of(" \"");
+			size_t strEnd = sarg1.find_last_not_of(" \"");
+			sarg1 = sarg1.substr(strBegin, strEnd - strBegin + 1);
+			fs.write(fd, sarg1);
         } else {
             cerr << "Bad file descriptor for write." << endl;
         }
@@ -107,5 +110,7 @@ void parse(const string &str) {
         } else {
             cerr << "Bad filename for export." << endl;
         }
+    } else if (cmd == "quit") {
+        exit(0);
     }
 }
