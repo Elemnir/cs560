@@ -186,7 +186,8 @@ that has something coming from it. This way, the client can simply loop
 infinitely, select the file descriptor that has activity, and pipe input from
 \texttt{stdin} if no output is available to be received. This way, the user can
 simultaneously input text into the shell while receiving its output
-successfully.
+successfully. The client accepts two arguments, the first being the hostname or
+IP address of the host, and the second being the port number.
 
 \subsection{Shell}
 
