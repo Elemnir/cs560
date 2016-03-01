@@ -163,6 +163,13 @@ void FileSystem::write(unsigned fd, const string &str, ostream &out) {
             head.len = len + opened[fd].seek;
             set<Inode>(head.blkNo, head);
         }
+        
+        if (index >= opened[fd].inode.blkCt) {
+            opened[fd].inode = get<Inode>(opened[fd].inode.blkNo);
+            opened[fd].inode.block[index] = allocate_block();
+            opened[fd].inode.blkCt++;
+            set<Inode>(opened[fd].inode.blkNo, opened[fd].inode);
+        }
 
         blk = get<Block>(opened[fd].inode.block[index]);
         strncpy(&(blk.text[pos]), str.c_str(), pre);
@@ -181,10 +188,12 @@ void FileSystem::write(unsigned fd, const string &str, ostream &out) {
             
             if (i == INODE_SLOTS) {
                 if (opened[fd].inode.next == 0) {
+                    BLK_NO first = opened[fd].inode.first;
                     opened[fd].inode.next = num = allocate_block();
                     set<Inode>(opened[fd].inode.blkNo, opened[fd].inode);
                     opened[fd].inode = get<Inode>(opened[fd].inode.next);
                     opened[fd].inode.blkNo = num;
+                    opened[fd].inode.first = first;
                     set<Inode>(num, opened[fd].inode);
                 } else {
                     opened[fd].inode = get<Inode>(opened[fd].inode.next);
@@ -348,7 +357,10 @@ void FileSystem::set_header() {
 
 BLK_NO FileSystem::allocate_block() {
     BLK_NO rval = 0;
-    if (header.flh == 0) return rval;
+    if (header.flh == 0) {
+        cout << "Out of nodes!" << endl;
+        return rval;
+    }
 
     FreeListNode node = get<FreeListNode>(header.flh);
     if (node.size == 1) {
@@ -390,7 +402,7 @@ void FileSystem::init_file(BLK_NO self, BLK_NO parent, bool isDir, const string 
     if (isDir) {
         node.isDir = true;
         blk = get<Block>(node.block[0]);
-        node.len = sprintf(&blk, "%x .\n%x ..\n", self, parent);
+        node.len = sprintf(&blk, "%x ..\n", parent);
         set<Block>(node.block[0], blk);
     }
 
@@ -423,5 +435,37 @@ void FileSystem::map_current_dir() {
         while (ss >> hex >> ptr >> name) {
             cdd[name] = ptr;
         }
+    }
+}
+
+void FileSystem::store_current_dir() {
+    stringstream ss;
+    string block, line;
+    Block blk; size_t index = 0;
+
+    for (const auto &i : cdd) {
+        ss.clear(); ss.str("");
+        ss << hex << i.second << ' ' << i.first << '\n';
+        if (line.size() + ss.str().size() > BLK_SIZE) {
+            if (index > cdi.blkCt) {
+                cdi.block[index] = allocate_block(); cdi.blkCt++;
+                set<Inode>(cdi.blkNo, cdi);
+            }
+            blk = get<Block>(cdi.block[index]);
+            strncpy(blk.text, line.c_str(), line.size());
+            set<Block>(cdi.block[index++], blk);
+            line = "";
+        } 
+        line += ss.str();
+    }
+
+    if (line.size() > 0) {    
+        if (index > cdi.blkCt) {
+            cdi.block[index] = allocate_block(); cdi.blkCt++;
+            set<Inode>(cdi.blkNo, cdi);
+        }
+        blk = get<Block>(cdi.block[index]);
+        strncpy(blk.text, line.c_str(), line.size());
+        set<Block>(cdi.block[index], blk);
     }
 }

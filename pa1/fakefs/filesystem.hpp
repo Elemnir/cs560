@@ -103,6 +103,7 @@ class FileSystem {
     // Directory and File tools
     void init_file(BLK_NO self, BLK_NO parent, bool isDir, const string &fname);
     void map_current_dir();
+    void store_current_dir();
 
     // Handle to storage, the FS Header, and the Current Directory
     fstream fsfile;
