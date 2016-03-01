@@ -19,13 +19,13 @@ int main(int argc, char **argv)
   fd_set readfds, masterfds;
 
   /* Handle arguments */
-  if(argc != 2) {
-    fprintf(stderr, "USAGE: ./fsclient PORTNUM\n");
+  if(argc != 3) {
+    fprintf(stderr, "USAGE: ./fsclient HOST PORTNUM\n");
     exit(1);
   }
 
   /* Make sure the portnum is valid */
-  portnum = strtol(argv[1], NULL, 10);
+  portnum = strtol(argv[2], NULL, 10);
   if((portnum <= 0) || (portnum > 65535)) {
     fprintf(stderr, "ERROR: Your port number is invalid.\n");
     exit(1);
@@ -37,8 +37,8 @@ int main(int argc, char **argv)
   hints.ai_socktype = SOCK_STREAM; /* TCP */
 
   /* Get information about the host (DNS, etc) */
-  retval = getaddrinfo("localhost",
-                       argv[1],
+  retval = getaddrinfo(argv[1],
+                       argv[2],
                        &hints,
                        &info);
   if(retval != 0) {
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 
     inet_ntop(AF_INET, &(((struct sockaddr_in *)(p->ai_addr))->sin_addr),
               ip4, INET_ADDRSTRLEN);
-    /* printf("Trying to connect to: %s\n", ip4); */
+    printf("Trying to connect to: %s\n", ip4);
 
     /* Get a socket */
     sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
@@ -59,7 +59,6 @@ int main(int argc, char **argv)
       perror("");
       continue;
     }
-
 
     /* Connect to the port */
     if(connect(sock, p->ai_addr, p->ai_addrlen) == -1) {

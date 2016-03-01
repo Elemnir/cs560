@@ -267,6 +267,10 @@ implement the above functions easily.
   \item[\texttt{map\_current\_dir}] refills the map of files in the current
     directory, \texttt{cdd}. This data structure is used by multiple other
     functions to loop over the file in the current directory.
+  \item[\texttt{store\_current\_dir}] takes the map of files in the current
+    directory and writes them to disk. Thus, to add or remove files or
+    directories from the current directory, one must simply free up those
+    blocks, remove the files from the \texttt{cdd} map, and call this function.
 \end{description}
 
 %----------------------------------------------------------------------------------------

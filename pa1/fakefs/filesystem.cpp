@@ -254,6 +254,7 @@ void FileSystem::rmdir(const string &dir) {
         } else if (node.len > 8) { // Length of a empty directory
             cout << "Directory not empty\n";
         } else {
+            cout << "Removing " << dir << endl;
             free_block(node.block[0]);
             free_block(node.blkNo);
             cdd.erase(dir);
@@ -481,6 +482,10 @@ void FileSystem::store_current_dir() {
             set<Inode>(cdi.blkNo, cdi);
         }
         blk = get<Block>(cdi.block[index]);
+        /* Blank the block first */
+        for(int i = 0; i < BLK_SIZE; i++) {
+            blk[i] = 0;
+        }
         strncpy(blk.text, line.c_str(), line.size());
         set<Block>(cdi.block[index], blk);
     }

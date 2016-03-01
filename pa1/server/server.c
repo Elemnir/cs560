@@ -47,8 +47,8 @@ int main(int argc, char **argv)
   struct addrinfo hints, *info, *p;
   char ip[INET6_ADDRSTRLEN];
 
-  /* The port number and the socket that we're binding to */
-  int portnum, sock;
+  /* The socket that we're binding to */
+  int sock;
 
   /* Maximum numbers of connections in the queue */
   int backlog = 20;
@@ -64,24 +64,18 @@ int main(int argc, char **argv)
 
   /* Handle arguments */
   if(argc != 2) {
-    fprintf(stderr, "USAGE: ./fsclient PORTNUM\n");
+    fprintf(stderr, "USAGE: ./server PORTNUM\n");
     exit(1);
   }
 
-  /* Make sure the portnum is valid */
-  portnum = strtol(argv[1], NULL, 10);
-  if((portnum <= 0) || (portnum > 65535)) {
-    fprintf(stderr, "ERROR: Your port number is invalid.\n");
-    exit(1);
-  }
-  
   /* Fill in the information that we do know */
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_UNSPEC;     /* IPv4 or IPv6 */
   hints.ai_socktype = SOCK_STREAM; /* TCP */
+  hints.ai_flags = AI_PASSIVE;
 
   /* Get information about localhost's sockets */
-  if(getaddrinfo("localhost", argv[1], &hints, &info) != 0) {
+  if(getaddrinfo(NULL, argv[1], &hints, &info) != 0) {
     exit(1);
   }
   
@@ -94,14 +88,14 @@ int main(int argc, char **argv)
     /* Get a socket */
     sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
     if(sock == -1) {
-      /*perror("");*/
+      perror("");
       continue;
     }
 
     /* Connect to the port */
     if(bind(sock, p->ai_addr, p->ai_addrlen) == -1) {
       close(sock);
-      /*perror("");*/
+      perror("");
       continue;
     }
 
