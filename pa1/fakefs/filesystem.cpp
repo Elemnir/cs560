@@ -459,6 +459,7 @@ void FileSystem::store_current_dir() {
     stringstream ss;
     string block, line;
     Block blk; size_t index = 0;
+    size_t len = 0;
 
     for (const auto &i : cdd) {
         ss.clear(); ss.str("");
@@ -471,6 +472,7 @@ void FileSystem::store_current_dir() {
             blk = get<Block>(cdi.block[index]);
             strncpy(blk.text, line.c_str(), line.size());
             set<Block>(cdi.block[index++], blk);
+            len += line.size();
             line = "";
         } 
         line += ss.str();
@@ -488,5 +490,8 @@ void FileSystem::store_current_dir() {
         }
         strncpy(blk.text, line.c_str(), line.size());
         set<Block>(cdi.block[index], blk);
+        len += line.size();
     }
+    cdi.len = len;
+    set<Inode>(cdi.blkNo, cdi);
 }
