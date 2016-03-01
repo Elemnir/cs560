@@ -244,7 +244,23 @@ void FileSystem::mkdir(const string &dir) {
 }
 
 void FileSystem::rmdir(const string &dir) {
-
+    Inode node;
+    if (cdd.find(dir) == cdd.end()) {
+        cout << "File not found\n";
+    } else {
+        node = get<Inode>(cdd[dir]); 
+        if (!node.isDir) {
+            cout << "Not a directory\n";
+        } else if (node.len > 8) { // Length of a empty directory
+            cout << "Directory not empty\n";
+        } else {
+            free_block(node.block[0]);
+            free_block(node.blkNo);
+            cdd.erase(dir);
+            store_current_dir();
+            map_current_dir();
+        }
+    }
 }
 
 void FileSystem::chdir(const string &dir) {
