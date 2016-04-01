@@ -1,4 +1,4 @@
-from website import app
+from . import app
 
 from flask import _app_ctx_stack
 from sqlite3 import dbapi2 as sqlite3

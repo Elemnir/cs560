@@ -9,11 +9,11 @@ def index():
 
 @app.route("/query")
 def query():
-    qlst = request.args.get('qstring', '').split()
+    qlst = request.args.get('qstring', '')
     qsql = """SELECT p.name, e.line 
                 FROM Term t, Pub p, Entry e 
                 WHERE t.id = e.term AND p.id = e.pub 
                   AND t.word = '{}'
-           """.format(qlst[0])
+           """.format(qlst)
 
     return render_template("query.html", items=query_db(qsql))
