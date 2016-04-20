@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import sys
 
 damping = 0.85
