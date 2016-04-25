@@ -13,7 +13,7 @@ def main():
         except Exception:
             continue
 
-        if key in sums.keys():
+        if key in sums:
             sums[key] += value
         else:
             sums[key] = value
