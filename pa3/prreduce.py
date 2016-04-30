@@ -20,7 +20,7 @@ def main():
 
     for pgid in sums.keys():
         pr = (1 - damping) + damping * sums[pgid]
-        sys.stdout.write("{} {}\n".format(pgid, pr)
+        sys.stdout.write("{} {}\n".format(pgid, pr))
 
 if __name__ == "__main__":
     main()
